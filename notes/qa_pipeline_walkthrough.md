@@ -26,7 +26,7 @@ template ("Bike Shop" Excel model) in the developer layout.
 | Term | Meaning |
 | --- | --- |
 | Developer layout | Epicenter's directory ("rational") layout: the project has `src/`, `target/`, `config/` and `log/`. The git repository is cloned into `src/`; the sim is served from `target/`. |
-| Pipeline | A JSON config (`config/pipeline/<name>.cfg1`) with an ordered list of operations: `git`, `npm`, `copy`, `clean`, `configure`. Running it produces an audit record and a log. |
+| Pipeline | A named, ordered list of operations (`git`, `npm`, `copy`, `clean`, `configure`) that you assemble in the admin UI. Epicenter stores it as `config/pipeline/<name>.cfg1`. Running it produces an audit record and a log. |
 | Deploy key | A read-only SSH key registered on the GitHub repository that lets Epicenter pull it. |
 
 ## Step 1 — Fork the repository and tour the developer layout
@@ -51,10 +51,10 @@ Outcome: QA owns a copy of the project on GitHub and understands what Epicenter 
    | --- | --- | --- |
    | `interface/` | The npm project (Vite + React + TypeScript). `package.json` and `package-lock.json` live here. | `npm ci` and `npm run build` run inside this folder; the build writes to `target/interface`. |
    | `model/` | `model.xlsx` (Bike Shop model) and `model.ctx2`. | The `copy` operation copies it to `target/model`. |
-   | `pipeline/` | Copies of the pipeline configs (`sync.cfg1`, `build.cfg1`, `build-dev.cfg1`). | Nothing automatic; you upload them to `config/pipeline/` on the project. |
+   | `pipeline/` | Reference copies of the pipeline definitions (`sync.cfg1`, `build.cfg1`, `build-dev.cfg1`), the same operations you will select in the UI. | Nothing automatic; useful to compare against what the UI saves. |
    | `tests/`, `update_notes/`, `notes/` | Smoke test, screenshots, conversion notes. | Ignored by the pipeline. |
 
-4. Open `pipeline/build.cfg1` and read the four operations aloud; you will paste this file in Step 5.
+4. Open `pipeline/build.cfg1` and read the four operations aloud; you will recreate them in the UI in Step 5.
 
 **Pass:** the fork exists under your GitHub account and `interface/package-lock.json` is
 present (the build uses `npm ci`, which fails without a lockfile).
@@ -133,55 +133,52 @@ strips the PEM armor and sends the correct specs for you.
 
 Outcome: the fork's `main` branch appears under `src/` on the project.
 
-1. Upload the git-only config as `config/pipeline/sync.cfg1`. Its contents are in the fork at
-   `pipeline/sync.cfg1`:
+1. In the Epicenter admin UI open the project's **Pipelines** area and create a new pipeline
+   named `sync`. Add one operation:
 
-   ```json
-   {
-     "auditRetentionCount": 20,
-     "operations": [
-       { "objectType": "git", "branch": "main", "confirmed": true }
-     ]
-   }
-   ```
+   | Operation | Field | Value |
+   | --- | --- | --- |
+   | Git | Branch | `main` |
+   | Git | Confirmed | on (required: the sync discards any local changes in `src/`) |
+   | Git | Force | off |
 
-   - `branch` is the branch to check out before pulling; `confirmed: true` is required because
-     the sync discards any local changes in `src/`.
-   - Uploads do not overwrite: if a `sync.cfg1` already exists, delete it first.
-2. Run the pipeline named `sync`. It finishes in a few seconds.
-3. **Show on screen:** the audit record going from `RUNNING` to `SUCCEEDED`, then the log
+   Leave the audit retention at its default (20). Save the pipeline.
+2. **Show on screen:** the project file browser now has `config/pipeline/sync.cfg1`. Open it
+   and show it matches `pipeline/sync.cfg1` in the fork: one `git` operation with
+   `"branch": "main"` and `"confirmed": true`.
+3. Run the pipeline `sync`. It finishes in a few seconds.
+4. **Show on screen:** the audit record going from `RUNNING` to `SUCCEEDED`, then the log
    `log/pipeline/sync-<auditKey>.log`. The git line reads `Git synchronized on sha(…)`; the
    SHA matches the latest commit on your fork's `main`.
-4. **Show on screen:** `src/` now contains the repository: `interface/`, `model/`,
+5. **Show on screen:** `src/` now contains the repository: `interface/`, `model/`,
    `pipeline/`, `tests/`, `README.md`, a `.git/` folder. `target/` is still empty.
 
 **Pass:** status `SUCCEEDED`, `src/interface/package.json` exists, `target/interface` has no
 `index.html` yet.
 
-*Command-line alternative:* `npm run pipeline -- deploy sync` uploads the config, runs it,
-polls, and prints the log.
-
 ## Step 5 — Pipeline 2: full build with npm
 
 Outcome: the interface is built inside Epicenter's Node container and the model is copied into `target/`.
 
-1. Upload `pipeline/build.cfg1` from the fork as `config/pipeline/build.cfg1`:
+1. Create a second pipeline named `build` and add four operations in this order:
 
-   ```json
-   {
-     "auditRetentionCount": 20,
-     "operations": [
-       { "objectType": "git", "branch": "main", "confirmed": true },
-       { "objectType": "npm", "nodeVersion": "v24", "directory": "interface",
-         "commands": ["npm", "ci"], "timeoutMinutes": 20 },
-       { "objectType": "npm", "nodeVersion": "v24", "directory": "interface",
-         "commands": ["npm", "run", "build"], "timeoutMinutes": 20 },
-       { "objectType": "copy", "items": [{ "location": "MODEL" }] }
-     ]
-   }
-   ```
+   | # | Operation | Field | Value |
+   | --- | --- | --- | --- |
+   | 0 | Git | Branch | `main` |
+   | 0 | Git | Confirmed | on |
+   | 1 | NPM | Node version | `v24` |
+   | 1 | NPM | Directory | `interface` |
+   | 1 | NPM | Command | `npm ci` (one command per NPM operation) |
+   | 1 | NPM | Timeout (minutes) | `20` |
+   | 2 | NPM | Node version | `v24` |
+   | 2 | NPM | Directory | `interface` |
+   | 2 | NPM | Command | `npm run build` |
+   | 2 | NPM | Timeout (minutes) | `20` |
+   | 3 | Copy | Location | `MODEL` (leave From and To empty) |
 
-2. Explain the operations while the audience reads the file:
+   Save the pipeline. **Show on screen:** `config/pipeline/build.cfg1` now exists and matches
+   `pipeline/build.cfg1` in the fork.
+2. Explain the operations while the audience looks at the pipeline:
 
    | # | Operation | What it does | Where |
    | --- | --- | --- | --- |
@@ -190,7 +187,7 @@ Outcome: the interface is built inside Epicenter's Node container and the model 
    | 2 | `npm run build` | `tsc -b && vite build`; Vite writes to `/target/interface` (the project's `target/` is mounted there). | container |
    | 3 | `copy MODEL` | Copies `src/model/` to `target/model/`. | platform |
 
-3. Run the pipeline named `build`. Expect about 35 seconds: `npm ci` is the long step.
+3. Run the pipeline `build`. Expect about 35 seconds: `npm ci` is the long step.
    **Show on screen:** the audit status `RUNNING`, then `SUCCEEDED`.
 4. Open the log `log/pipeline/build-<auditKey>.log`. It is one JSON object per log entry,
    each with `index` (operation number), `operationType`, `status` and `message`.
@@ -205,9 +202,6 @@ Outcome: the interface is built inside Epicenter's Node container and the model 
 
 **Pass:** status `SUCCEEDED`, all four operations `COMPLETED`, no operation `SKIPPED`
 (a `SKIPPED` operation means an earlier one failed).
-
-*Command-line alternative:* `npm run pipeline -- deploy build`, then
-`npm run pipeline -- list build` for the audit history.
 
 ## Step 6 — Show the build output and run the sim
 
@@ -243,8 +237,8 @@ the project URL; both logins work and the participant sees model values.
 - [ ] Project `qa-pipeline-example` created: Password Protected, Web Access allow all URLs, Developer layout
 - [ ] `src/` and `target/` shown empty after creation
 - [ ] Deploy key listed on the fork as read-only; git integration saved with the `ssh://` URI
-- [ ] Pipeline `sync` SUCCEEDED and `src/` shows the repository files
-- [ ] Pipeline `build` SUCCEEDED with operations 0–3 all COMPLETED; log shown
+- [ ] Pipeline `sync` built in the UI (one Git operation), SUCCEEDED, and `src/` shows the repository files
+- [ ] Pipeline `build` built in the UI (Git, NPM `npm ci`, NPM `npm run build`, Copy MODEL), SUCCEEDED with operations 0–3 all COMPLETED; log shown
 - [ ] `target/interface/index.html` and `target/model/model.xlsx` present
 - [ ] Sim loads at the project URL; facilitator and participant can log in; participant sees model values
 
@@ -260,7 +254,7 @@ the project URL; both logins work and the participant sees model values.
 | Sim URL returns 404 right after creation | Nothing built yet | Run the `build` pipeline |
 | Sim redirects to `login.html` | Web Access is not "allow all URLs" | Change the setting (`structure.enforceFilePermissions: false`) |
 | Operations after a failure show `SKIPPED` | Expected: the pipeline stops at the first failed operation | Fix the failed operation and re-run |
-| Upload of a `.cfg1` is refused or the old config keeps running | Uploads do not overwrite | Delete `config/pipeline/<name>.cfg1` first, then upload |
+| A changed pipeline still runs the old operations | The saved `config/pipeline/<name>.cfg1` was not updated | Re-open the pipeline in the UI, check the operations, save again and confirm the file changed |
 
 ### Clean-up after the session
 
