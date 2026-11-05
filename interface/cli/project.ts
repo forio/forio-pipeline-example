@@ -4,7 +4,7 @@
  *   npm run project -- create [--private]        create the project (directory layout) if it does not exist
  *   npm run project -- info                      print the project record
  *   npm run project -- access <public|private|authenticated>
- *   npm run project -- git <ssh-uri> <private-key-file> <public-key-file>
+ *   npm run project -- git <ssh-uri> <private-key-file> <public-key-file>   (uri form: ssh://git@github.com/org/repo.git)
  *   npm run project -- git-status                current branch on the platform
  *
  * Account/project come from ../notes/epicenter_credentials_local.md + .env (see config.ts).
@@ -73,13 +73,28 @@ async function git(
   privateKeyFile: string,
   publicKeyFile: string
 ) {
-  const privateKey = fs.readFileSync(privateKeyFile, 'utf-8');
-  const publicKey = fs.readFileSync(publicKeyFile, 'utf-8').trim();
+  // Epicenter decodes the raw key material with BouncyCastle (see
+  // structure/workflow/.../GitSessionFactoryCallback#decodePrivateKey): the private key is the
+  // base64 body of a PKCS#8 PEM (no armor lines), the public key is the OpenSSH
+  // "ssh-ed25519 AAAA..." line without its comment.
+  const privatePem = fs.readFileSync(privateKeyFile, 'utf-8');
+  if (!/-----BEGIN PRIVATE KEY-----/.test(privatePem)) {
+    throw new Error(
+      `${privateKeyFile} is not a PKCS#8 PEM ("BEGIN PRIVATE KEY"). Generate one with\n` +
+        '  openssl genpkey -algorithm ed25519 -out deploy-key.pem\n' +
+        '  ssh-keygen -y -f deploy-key.pem > deploy-key.pub'
+    );
+  }
+  const privateKey = privatePem
+    .split(/\r?\n/)
+    .filter((line) => line && !line.startsWith('-----'))
+    .join('');
+  const publicKey = fs.readFileSync(publicKeyFile, 'utf-8').trim().split(/\s+/).slice(0, 2).join(' ');
   const body = {
     uri,
     algorithm: 'ed25519',
     privateKey,
-    privateKeySpec: 'openssh',
+    privateKeySpec: 'pkcs8',
     publicKey,
     publicKeySpec: 'openssh',
   };

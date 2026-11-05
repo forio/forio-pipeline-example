@@ -134,9 +134,10 @@ One-time setup (per project):
 ```bash
 cd interface
 npm run project -- create                 # creates the project with layout RATIONAL, accessType public
-ssh-keygen -t ed25519 -N "" -f /tmp/deploy-key
+openssl genpkey -algorithm ed25519 -out /tmp/deploy-key.pem   # PKCS#8 PEM, what Epicenter decodes
+ssh-keygen -y -f /tmp/deploy-key.pem > /tmp/deploy-key.pub      # OpenSSH public key line
 #   add /tmp/deploy-key.pub as a read-only deploy key on the GitHub repo, then:
-npm run project -- git git@github.com:forio/forio-pipeline-example.git /tmp/deploy-key /tmp/deploy-key.pub
+npm run project -- git ssh://git@github.com/forio/forio-pipeline-example.git /tmp/deploy-key.pem /tmp/deploy-key.pub
 npm run pipeline -- upload build          # pipeline/build.cfg1 → config/pipeline/build.cfg1
 ```
 

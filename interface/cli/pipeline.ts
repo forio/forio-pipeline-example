@@ -100,13 +100,20 @@ async function log(name: string, auditKey: string, token: string, config: Config
     return;
   }
   console.log(`--- ${remote}`);
-  for (const line of text.split(/\r?\n/)) {
+  // The log is a stream of JSON objects, sometimes concatenated without newlines.
+  const lines = text.replace(/}\s*{/g, '}\n{').split(/\r?\n/);
+  for (const line of lines) {
     if (!line.trim()) continue;
     try {
       const entry = JSON.parse(line);
-      const { timestamp, time, level, message, ...rest } = entry;
+      const { timestamp, time, level, index, operationType, status, message, ...rest } = entry;
       const extra = Object.keys(rest).length ? ' ' + JSON.stringify(rest) : '';
-      console.log(`${timestamp ?? time ?? ''} ${level ?? ''} ${message ?? ''}${extra}`.trim());
+      const op = operationType !== undefined ? `[${index ?? ''} ${operationType} ${status ?? ''}]` : '';
+      console.log(
+        `${timestamp ?? time ?? ''} ${level ?? ''} ${op} ${message ?? ''}${extra}`
+          .replace(/\s+/g, ' ')
+          .trim()
+      );
     } catch {
       console.log(line);
     }
