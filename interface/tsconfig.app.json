@@ -26,5 +26,5 @@
       "~/*": ["./src/*"]
     }
   },
-  "include": ["src", "cli"]
+  "include": ["src", "cli", "../tests"]
 }

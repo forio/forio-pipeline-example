@@ -14,40 +14,9 @@
  *   POST /group                         body GroupCreateInView { name }
  *   POST /group/member/{groupKey}       body [ { objectType: "group", role, userKey } ]
  */
-import * as fs from 'fs';
 import { Fault } from 'epicenter-libs';
-import { loadConfig, paths, type Config } from './config';
+import { loadConfig, loadTestUsers, type Config } from './config';
 import { login, router } from './epicenter';
-
-type Role = 'facilitator' | 'participant';
-interface TestUser {
-  handle: string;
-  role: Role;
-}
-
-function readTestUsers(): { users: TestUser[]; password: string } {
-  const content = fs.readFileSync(paths.CREDENTIALS_PATH, 'utf-8');
-  const lines = content.split(/\r?\n/);
-  const users: TestUser[] = [];
-  let password: string | undefined;
-  let inUsers = false;
-  for (const line of lines) {
-    if (/^users\s*:/i.test(line)) inUsers = true;
-    const pw = /^password\s*:\s*(.+?)\s*$/i.exec(line);
-    if (pw) password = pw[1]; // last occurrence wins: the test-user password follows the author block
-    const user = /^(\S+)\s*\((fac|facilitator|student|participant)\)\s*$/i.exec(line.trim());
-    if (inUsers && user) {
-      users.push({
-        handle: user[1],
-        role: /^fac/i.test(user[2]) ? 'facilitator' : 'participant',
-      });
-    }
-  }
-  if (!users.length || !password) {
-    throw new Error(`No test users / password found in ${paths.CREDENTIALS_PATH}`);
-  }
-  return { users, password };
-}
 
 const authed = (token: string, config: Config) =>
   router(config).withAuthorization(`Bearer ${token}`);
@@ -92,7 +61,7 @@ async function ensureGroup(token: string, config: Config, name: string) {
 
 async function main() {
   const groupName = process.argv[2] ?? 'pipeline-test';
-  const { users, password } = readTestUsers();
+  const { users, password } = loadTestUsers();
   const config = await loadConfig();
   console.log(`${config.SERVER}/${config.ACCOUNT_SHORT_NAME}/${config.PROJECT_SHORT_NAME}`);
   const token = await login(config);

@@ -167,3 +167,38 @@ export async function loadConfig(): Promise<Config> {
 }
 
 export const paths = { INTERFACE_DIR, REPO_DIR, CREDENTIALS_PATH, ENV_PATH };
+
+/**
+ * Test users from the credentials file: lines `<handle> (fac)` / `<handle> (student)` after the
+ * `users:` line, and the LAST `password:` line as their shared password.
+ */
+export type TestUserRole = 'facilitator' | 'participant';
+export interface TestUser {
+  handle: string;
+  role: TestUserRole;
+}
+
+export function loadTestUsers(): { users: TestUser[]; password: string } {
+  const content = fs.readFileSync(paths.CREDENTIALS_PATH, 'utf-8');
+  const lines = content.split(/\r?\n/);
+  const users: TestUser[] = [];
+  let password: string | undefined;
+  let inUsers = false;
+  for (const line of lines) {
+    if (/^users\s*:/i.test(line)) inUsers = true;
+    const pw = /^password\s*:\s*(.+?)\s*$/i.exec(line);
+    if (pw) password = pw[1]; // last occurrence wins: the test-user password follows the author block
+    const user = /^(\S+)\s*\((fac|facilitator|student|participant)\)\s*$/i.exec(line.trim());
+    if (inUsers && user) {
+      users.push({
+        handle: user[1],
+        role: /^fac/i.test(user[2]) ? 'facilitator' : 'participant',
+      });
+    }
+  }
+  if (!users.length || !password) {
+    throw new Error(`No test users / password found in ${paths.CREDENTIALS_PATH}`);
+  }
+  return { users, password };
+}
+

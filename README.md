@@ -115,7 +115,9 @@ Run these from `interface/`.
 | `npm run lint`            | ESLint + TypeScript rules (`eslint.config.js`)                           |
 | `npm run deploy`          | Build, then upload `target/interface` and `target/model` with the File API (fast iteration loop) |
 | `npm run pipeline -- …`   | Upload / run / list Epicenter pipeline configs (see below)               |
-| `npm run project -- …`    | One-time project setup: `create`, `access`, `git`, `git-status`, `info`  |
+| `npm run project -- …`    | One-time project setup: `create`, `access`, `web-access`, `git`, `git-status`, `info`, `files`, `rm` |
+| `npm run fixtures`        | Creates the test group (`pipeline-test`) and adds the users listed in the credentials file |
+| `npm run test:smoke`      | API smoke test of the deployed sim: facilitator episode → participant run → model variables |
 | `postinstall`             | Applies any **patch‑package** overrides                                  |
 
 ### CLI credentials
@@ -141,6 +143,10 @@ npm run project -- git ssh://git@github.com/forio/forio-pipeline-example.git /tm
 npm run pipeline -- upload build          # pipeline/build.cfg1 → config/pipeline/build.cfg1
 ```
 
+The project also needs **Web Access: allow access to all URLs by default**
+(`npm run project -- web-access allow`, i.e. `structure.enforceFilePermissions: false`);
+otherwise unauthenticated visitors are redirected to a `login.html` this app does not have.
+
 Every build afterwards:
 
 ```bash
@@ -154,6 +160,15 @@ The config (`pipeline/build.cfg1`) runs four operations: `git` (syncs `src/` wit
 `MODEL`.  `pipeline/build-dev.cfg1` is the same for the `develop` branch.
 Pipeline configs live outside the git checkout; re-upload from `pipeline/` if
 `config/pipeline` is empty after a reset.
+
+### Verifying a build
+
+```bash
+npm run fixtures            # once: test group + users (credentials file, git-ignored)
+npm run test:smoke          # logs in as facilitator + participant, creates a run, reads variables
+```
+
+Then open `https://<host>/app/<account>/<project>/` and log in as a test user.
 
 ---
 

@@ -1,6 +1,8 @@
 import { Fault, Router } from 'epicenter-libs';
 import type { Config } from './config';
 
+export { Fault };
+
 export const normalizeFetchResponse = async (
   response: Response,
   reader?: (response: Response) => Promise<any>
