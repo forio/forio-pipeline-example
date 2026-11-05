@@ -15,7 +15,8 @@
     "deploy:interface": "tsx cli/deploy.ts ../target/interface target/interface",
     "deploy": "npm-run-all build build:model deploy:*",
     "pipeline": "tsx cli/pipeline.ts",
-    "project": "tsx cli/project.ts"
+    "project": "tsx cli/project.ts",
+    "fixtures": "tsx cli/fixtures.ts"
   },
   "dependencies": {
     "@csstools/normalize.css": "^12.1.1",
