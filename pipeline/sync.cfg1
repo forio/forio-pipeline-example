@@ -1,0 +1,6 @@
+{
+  "auditRetentionCount": 20,
+  "operations": [
+    { "objectType": "git", "branch": "main", "confirmed": true }
+  ]
+}

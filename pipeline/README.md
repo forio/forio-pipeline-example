@@ -15,6 +15,7 @@ npm run pipeline -- list build          # audit history
 | --------------- | --------- | ----------------------------------------------- |
 | `build.cfg1`    | `main`    | Production build; run after merging to `main`.  |
 | `build-dev.cfg1`| `develop` | Builds the development branch.                  |
+| `sync.cfg1`     | `main`    | Git sync only (no build); used in the QA walkthrough to show `src/` filling up. |
 
 Each config: `git` sync (discards local changes on the platform) → `npm ci` →
 `npm run build` (Vite writes `/target/interface`) → `copy` `model/` → `target/model`.
