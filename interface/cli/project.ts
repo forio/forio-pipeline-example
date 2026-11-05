@@ -12,9 +12,17 @@
 import * as fs from 'fs';
 import { Fault } from 'epicenter-libs';
 import { loadConfig, type Config } from './config';
-import { login, router } from './epicenter';
+import { getFiles, login, router } from './epicenter';
 
 const PROJECT_NAME = 'Forio Pipeline Example';
+
+async function files(token: string, config: Config, dir: string) {
+  const entries = await getFiles(token, dir, config);
+  console.log(`${dir}/`);
+  for (const entry of entries) {
+    console.log(`  ${entry.objectType === 'directory' ? entry.name + '/' : entry.name}`);
+  }
+}
 
 const authed = (token: string, config: Config) =>
   router(config).withAuthorization(`Bearer ${token}`);
@@ -161,6 +169,24 @@ async function main() {
       return git(token, config, args[0], args[1], args[2]);
     case 'git-status':
       return gitStatus(token, config);
+    case 'files':
+      return files(token, config, args[0] ?? '');
+    case 'rm':
+      if (!args[0]) usage();
+      await authed(token, config).delete(`file/${args[0]}`);
+      console.log(`Deleted ${args[0]} ✓`);
+      return;
+    case 'web-access': {
+      // "Web Access: allow access to all URLs by default" in the admin UI == enforceFilePermissions false
+      if (!['allow', 'restrict'].includes(args[0])) usage();
+      const updated = await authed(token, config)
+        .patch('/project', {
+          body: { objectType: 'team', structure: { enforceFilePermissions: args[0] === 'restrict' } },
+        })
+        .then(({ body }) => body);
+      console.log(`enforceFilePermissions is now ${updated?.structure?.enforceFilePermissions} ✓`);
+      return;
+    }
     default:
       usage();
   }

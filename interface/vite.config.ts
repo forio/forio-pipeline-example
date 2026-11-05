@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react-swc';
+import fs from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
 import i18nextLoader from 'vite-plugin-i18next-loader';
@@ -12,8 +13,10 @@ export default defineConfig({
   },
   base: './',
   build: {
-    // The repository root is Epicenter's src/; the built site is served from target/interface
-    outDir: '../target/interface',
+    // The repository root is Epicenter's src/ and the built site is served from target/interface.
+    // Locally that is ../target/interface. In the pipeline's build container the working directory
+    // is /src/interface and the project's target directory is mounted at /target, so write there.
+    outDir: fs.existsSync('/target') ? '/target/interface' : '../target/interface',
     emptyOutDir: true,
   },
   plugins: [
