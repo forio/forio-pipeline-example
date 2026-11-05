@@ -1,0 +1,13 @@
+{
+    "version": "v2",
+    "restorations": {
+        "assembly": [{
+            "replay": {}
+        }],
+        "log": "temporal"
+    },
+    "defaults": {
+        "variables": {}
+    },
+    "variables": {}
+}

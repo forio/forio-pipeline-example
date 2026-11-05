@@ -1,0 +1,38 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  th,
+  td {
+    padding: var(--space-2) var(--space-4);
+  }
+}
+
+.striped tbody tr:nth-of-type(odd) {
+  background-color: var(--surface-2);
+  &:has(input:checked) {
+    background-color: var(--accent-11);
+  }
+}
+
+.hover tbody tr:hover:not(:has(input:checked)) {
+  background-color: var(--accent-a3);
+}
+
+tr:has(input) {
+  cursor: pointer;
+}
+
+tr:has(input:checked) {
+  background-color: var(--accent-11);
+  color: var(--surface-1);
+}
+
+.compact th,
+.compact td {
+  padding: var(--space-1) var(--space-2);
+}
+
+.numeric th,
+.numeric td {
+  text-align: right;
+}

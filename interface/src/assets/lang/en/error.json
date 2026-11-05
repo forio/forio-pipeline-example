@@ -1,0 +1,18 @@
+{
+  "login": {
+    "NEEDS_SELECT_GROUP": "Select a group and try again.",
+    "REQUIRED_FIELD": "Username and password are required. Please try again.",
+    "AUTHORIZATION_FAILURE": "Incorrect username or password. Please try again.",
+    "NO_GROUPS": "No groups found for this user.",
+    "AUTHENTICATION_GROUP_EXPIRED": "The group is expired. Please contact your facilitator.",
+    "UNKNOWN": "An unexpected error occurred. Please try again.",
+    "ADMIN_LOGIN_ERROR": "Admin login not supported."
+  },
+  "something_went_wrong": "Something Went Wrong",
+  "GENERIC_ERROR": "An unexpected error occurred. Please <0>log out</0> and try again.",
+  "NO_EPISODE": "The facilitator has not started a game yet.\nPlease log out and contact your group facilitator.",
+  "not_found": "Page Not Found",
+  "go_home": "<0>Go Home</0>",
+  "session_expired": "Session Expired",
+  "REGENERATE_FAIL": "Your session has expired and could not be automatically renewed.\nPlease <0>log out</0> and log back in."
+}

@@ -1,0 +1,21 @@
+{
+  "auditRetentionCount": 20,
+  "operations": [
+    { "objectType": "git", "branch": "develop", "confirmed": true },
+    {
+      "objectType": "npm",
+      "nodeVersion": "v24",
+      "directory": "interface",
+      "commands": ["npm", "ci"],
+      "timeoutMinutes": 20
+    },
+    {
+      "objectType": "npm",
+      "nodeVersion": "v24",
+      "directory": "interface",
+      "commands": ["npm", "run", "build"],
+      "timeoutMinutes": 20
+    },
+    { "objectType": "copy", "items": [{ "location": "MODEL" }] }
+  ]
+}

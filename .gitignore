@@ -1,0 +1,22 @@
+# local build output (same shape as Epicenter's target/)
+target/
+
+# credentials (local only)
+notes/epicenter_credentials_local.md
+interface/cli/config.json
+
+# dependencies
+interface/node_modules/
+
+# logs
+*.log
+
+# system / IDE
+*.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.local
+
+# per-user Claude Code settings
+.claude/settings.local.json

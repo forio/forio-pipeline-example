@@ -1,0 +1,10 @@
+.alert {
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border-left: 4px solid var(--danger-9);
+  background-color: var(--danger-a3);
+  color: var(--danger-9);
+  border-radius: var(--radius-small);
+  font-size: 0.875rem;
+}
