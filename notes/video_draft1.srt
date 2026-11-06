@@ -1,0 +1,792 @@
+1
+00:00:02,290 --> 00:00:05,410
+Today, I'm going to show you how to use the Epicenter Pipeline.
+
+2
+00:00:05,410 --> 00:00:07,690
+This is a new feature of Epicenter that
+
+3
+00:00:07,690 --> 00:00:11,010
+lets you load source code from GitHub,
+
+4
+00:00:11,010 --> 00:00:13,450
+and then build it with NPM,
+
+5
+00:00:13,450 --> 00:00:15,170
+and then serve the SIN,
+
+6
+00:00:15,170 --> 00:00:17,850
+essentially acting as a Jenkins.
+
+7
+00:00:17,850 --> 00:00:20,890
+I have an example here called the for your pipeline example
+
+8
+00:00:20,890 --> 00:00:24,650
+that you could fork and you can use to test this out.
+
+9
+00:00:24,650 --> 00:00:27,890
+To get started, go to GitHub,
+
+10
+00:00:27,890 --> 00:00:29,290
+you're logging your GitHub account,
+
+11
+00:00:29,290 --> 00:00:31,030
+you'll need to create one if you don't already have one,
+
+12
+00:00:31,030 --> 00:00:34,350
+and go to this URL where you can see the for your pipeline example.
+
+13
+00:00:34,350 --> 00:00:36,950
+This is a very simple SIN,
+
+14
+00:00:36,950 --> 00:00:39,110
+it's based on the Dev base build,
+
+15
+00:00:39,110 --> 00:00:42,070
+it lets you log in and it's got a very simple model.
+
+16
+00:00:42,070 --> 00:00:44,630
+What you're going to want to do next is you're going to want to
+
+17
+00:00:44,630 --> 00:00:46,750
+create your own copy of the SIN.
+
+18
+00:00:46,750 --> 00:00:48,270
+Let's create your own copy of the SIN,
+
+19
+00:00:48,270 --> 00:00:50,310
+just go ahead and fork it,
+
+20
+00:00:50,310 --> 00:00:55,430
+and it'll give your username here,
+
+21
+00:00:55,430 --> 00:00:56,430
+your GitHub username,
+
+22
+00:00:56,430 --> 00:00:58,310
+and then you give it a repository name,
+
+23
+00:00:58,310 --> 00:01:00,230
+and go ahead and create the fork.
+
+24
+00:01:00,230 --> 00:01:02,790
+It's a copy of the for you example.
+
+25
+00:01:02,790 --> 00:01:10,140
+What you're going to do next is you're going to go to
+
+26
+00:01:10,140 --> 00:01:11,980
+epicenter, we're going to create an account,
+
+27
+00:01:11,980 --> 00:01:14,020
+and then we're going to link that account to GitHub.
+
+28
+00:01:14,020 --> 00:01:15,940
+So let's go ahead and do that.
+
+29
+00:01:15,940 --> 00:01:21,730
+Let's log into for you.com slash epicenter,
+
+30
+00:01:21,730 --> 00:01:36,560
+go to your accounts,
+
+31
+00:01:36,560 --> 00:01:42,160
+and create a new project.
+
+32
+00:01:42,160 --> 00:01:46,640
+Name the project is something simple,
+
+33
+00:01:46,640 --> 00:01:50,040
+pipeline, I'll say WGH,
+
+34
+00:01:50,040 --> 00:01:52,480
+pipeline example,
+
+35
+00:01:52,680 --> 00:01:54,840
+password protected project,
+
+36
+00:01:54,840 --> 00:01:59,200
+create the project.
+
+37
+00:01:59,200 --> 00:02:00,920
+Now projects by default,
+
+38
+00:02:00,920 --> 00:02:03,800
+if I go to project files have two main sections,
+
+39
+00:02:03,800 --> 00:02:06,080
+a model and an interface section.
+
+40
+00:02:06,080 --> 00:02:09,880
+We need to change the file layout to be developer oriented
+
+41
+00:02:09,880 --> 00:02:11,760
+in order to support the pipeline.
+
+42
+00:02:11,760 --> 00:02:13,880
+To do that, we go to settings,
+
+43
+00:02:13,880 --> 00:02:16,760
+and in settings, they go to advanced settings.
+
+44
+00:02:16,760 --> 00:02:17,880
+I want to do a couple of things.
+
+45
+00:02:17,880 --> 00:02:20,060
+I want to change web access
+
+46
+00:02:20,060 --> 00:02:22,800
+to allow access to all URLs by default.
+
+47
+00:02:22,800 --> 00:02:26,400
+This is a pretty standard for a typical simulation.
+
+48
+00:02:26,400 --> 00:02:29,240
+But the key thing here is I want to go to directory layout,
+
+49
+00:02:29,240 --> 00:02:31,280
+and I want to change directory layout to say
+
+50
+00:02:31,280 --> 00:02:34,120
+to be developer mode, not simple mode.
+
+51
+00:02:34,120 --> 00:02:37,120
+I'll go ahead and save the project settings.
+
+52
+00:02:37,120 --> 00:02:40,200
+What that does is if I go back to project files,
+
+53
+00:02:40,200 --> 00:02:43,360
+is project files down as a source and a target section.
+
+54
+00:02:43,360 --> 00:02:47,080
+The source section has model interface proxy data folders.
+
+55
+00:02:47,080 --> 00:02:50,840
+The target has data interface model proxy folders.
+
+56
+00:02:51,000 --> 00:02:53,000
+The idea is that our source code from GitHub
+
+57
+00:02:53,000 --> 00:02:54,800
+is going to go into these folders,
+
+58
+00:02:54,800 --> 00:02:56,920
+and then our build process is going to put it
+
+59
+00:02:56,920 --> 00:02:57,960
+into the target folder,
+
+60
+00:02:57,960 --> 00:03:00,600
+and the sim is actually going to be served out of the target.
+
+61
+00:03:00,600 --> 00:03:02,400
+That's what the pipeline does.
+
+62
+00:03:02,400 --> 00:03:04,320
+You'll see now, now that I've changed that setting,
+
+63
+00:03:04,320 --> 00:03:07,520
+there's a new option here for pipeline.
+
+64
+00:03:07,520 --> 00:03:09,920
+Before I do that, I need to link to get.
+
+65
+00:03:09,920 --> 00:03:11,400
+So I go back to settings,
+
+66
+00:03:11,400 --> 00:03:14,280
+and up here, there's a setting for get integration.
+
+67
+00:03:14,280 --> 00:03:15,920
+I'm going to click that,
+
+68
+00:03:15,920 --> 00:03:18,680
+and I have to fill out my get info.
+
+69
+00:03:18,680 --> 00:03:20,960
+So I have to do my repository URL,
+
+70
+00:03:20,960 --> 00:03:23,680
+and I go ahead and I get that from here.
+
+71
+00:03:23,680 --> 00:03:25,480
+So here's my GitHub project.
+
+72
+00:03:25,480 --> 00:03:30,080
+Now, the repository URL is not the URL as a whole.
+
+73
+00:03:30,080 --> 00:03:31,560
+It's under code.
+
+74
+00:03:31,560 --> 00:03:34,240
+It typically starts with get at GitHub.
+
+75
+00:03:34,240 --> 00:03:35,080
+It's right here.
+
+76
+00:03:35,080 --> 00:03:36,480
+I use the SSH form,
+
+77
+00:03:36,480 --> 00:03:38,480
+and I'm going to copy it to the clipboard,
+
+78
+00:03:38,480 --> 00:03:39,680
+and then I go back in here,
+
+79
+00:03:39,680 --> 00:03:40,600
+and then I'm going to go ahead
+
+80
+00:03:40,600 --> 00:03:44,410
+and I'm going to paste that in.
+
+81
+00:03:44,410 --> 00:03:46,890
+You can put in a passphrase if you'd like.
+
+82
+00:03:46,890 --> 00:03:49,530
+I'm not going to bother at the moment.
+
+83
+00:03:49,530 --> 00:03:52,210
+Now what I need to do is I need to generate a key,
+
+84
+00:03:52,210 --> 00:03:57,010
+which is going to go and link my GitHub to my epicenter accounts.
+
+85
+00:03:57,010 --> 00:03:59,210
+So I have a deploy key right here,
+
+86
+00:03:59,210 --> 00:04:00,050
+and what I'm going to do,
+
+87
+00:04:00,050 --> 00:04:01,490
+I'm going to follow these instructions.
+
+88
+00:04:01,490 --> 00:04:02,970
+I'm going to go to GitHub,
+
+89
+00:04:02,970 --> 00:04:05,170
+and I'm going to go to repository settings,
+
+90
+00:04:05,170 --> 00:04:07,210
+deploy keys, add deploy key.
+
+91
+00:04:07,210 --> 00:04:08,930
+So I'm going to go ahead and copy this key.
+
+92
+00:04:08,930 --> 00:04:12,980
+So I copy the clipboard,
+
+93
+00:04:12,980 --> 00:04:15,100
+and then I go back to here,
+
+94
+00:04:15,100 --> 00:04:16,700
+and now what I'm going to put this in
+
+95
+00:04:16,700 --> 00:04:17,940
+is a deploy key,
+
+96
+00:04:17,980 --> 00:04:22,019
+which lets epicenter retrieve the files from GitHub.
+
+97
+00:04:22,019 --> 00:04:23,380
+I go to settings,
+
+98
+00:04:24,420 --> 00:04:29,120
+I go down to deploy keys under the bottom,
+
+99
+00:04:29,120 --> 00:04:31,120
+add a deploy key,
+
+100
+00:04:31,120 --> 00:04:32,520
+give it something with a simple name,
+
+101
+00:04:32,520 --> 00:04:37,520
+like epicenter pipeline sem,
+
+102
+00:04:37,880 --> 00:04:38,960
+and I pasted it.
+
+103
+00:04:39,880 --> 00:04:41,840
+I don't need to allow right access.
+
+104
+00:04:41,840 --> 00:04:42,760
+Add the key.
+
+105
+00:04:43,840 --> 00:04:44,680
+So what this does,
+
+106
+00:04:44,680 --> 00:04:46,960
+this is now a secret that both sides know,
+
+107
+00:04:46,960 --> 00:04:51,200
+and epicenter is now able to retrieve the files from GitHub.
+
+108
+00:04:52,120 --> 00:04:53,400
+Let's go back to epicenter.
+
+109
+00:04:54,640 --> 00:04:57,360
+I'm going to go ahead and say initialize repository,
+
+110
+00:04:57,360 --> 00:04:58,480
+and what that's going to do,
+
+111
+00:04:58,480 --> 00:05:01,120
+that's going to delete any files that are currently there.
+
+112
+00:05:01,120 --> 00:05:03,560
+There's nothing there that's important at the moment,
+
+113
+00:05:03,560 --> 00:05:05,400
+and then I'm going to,
+
+114
+00:05:05,400 --> 00:05:10,400
+and then that will set up the files in my directories.
+
+115
+00:05:11,320 --> 00:05:12,400
+Let's go check.
+
+116
+00:05:12,400 --> 00:05:14,520
+I go back to project files.
+
+117
+00:05:14,520 --> 00:05:16,840
+I can now see I have models,
+
+118
+00:05:16,840 --> 00:05:18,720
+and I have interface files.
+
+119
+00:05:18,720 --> 00:05:21,600
+So the files here are loaded directly from GitHub.
+
+120
+00:05:21,600 --> 00:05:23,760
+Now, these files are not ready to run.
+
+121
+00:05:23,760 --> 00:05:24,920
+These are source code files.
+
+122
+00:05:24,920 --> 00:05:27,200
+If I run the sevens, it's not available.
+
+123
+00:05:27,200 --> 00:05:28,320
+What I have to do is I have,
+
+124
+00:05:28,320 --> 00:05:30,120
+these are, I have to use NPM,
+
+125
+00:05:30,120 --> 00:05:32,440
+and I have to build this and put it in target.
+
+126
+00:05:32,440 --> 00:05:35,000
+That's essentially what Jenkins does.
+
+127
+00:05:35,000 --> 00:05:37,120
+So I'm going to go to the pipeline,
+
+128
+00:05:38,120 --> 00:05:40,840
+and the pipeline is where you define a job.
+
+129
+00:05:40,840 --> 00:05:46,090
+So now we're going to go ahead and create a new pipeline,
+
+130
+00:05:46,090 --> 00:05:48,490
+and the pipeline is equivalent to a Jenkins job.
+
+131
+00:05:49,090 --> 00:05:52,690
+I open this up, and what we'll see is we see
+
+132
+00:05:52,690 --> 00:05:54,410
+we're going to create a list of operations.
+
+133
+00:05:54,410 --> 00:05:55,770
+First, I'm going to name it.
+
+134
+00:05:55,770 --> 00:05:58,450
+I'm going to say it's called something like get and build,
+
+135
+00:05:58,450 --> 00:06:01,970
+and then I have a set of steps I've got to run through.
+
+136
+00:06:01,970 --> 00:06:04,050
+First of all, I'm going to do a get synchronize,
+
+137
+00:06:04,050 --> 00:06:06,250
+which is to match the repositories as a roadmap
+
+138
+00:06:06,250 --> 00:06:08,490
+to its remote branch.
+
+139
+00:06:08,490 --> 00:06:09,810
+So we've already set up get,
+
+140
+00:06:09,810 --> 00:06:12,490
+so I don't know where to pull the files from.
+
+141
+00:06:12,490 --> 00:06:14,010
+Then I'm going to do NPM,
+
+142
+00:06:14,010 --> 00:06:18,490
+which is a command that is a Node.js command,
+
+143
+00:06:18,690 --> 00:06:21,210
+and there's two different NPMs I have to do for this example.
+
+144
+00:06:21,210 --> 00:06:25,010
+The specifics are going to depend on the different code base,
+
+145
+00:06:25,010 --> 00:06:27,090
+but for the pipeline example we have,
+
+146
+00:06:27,090 --> 00:06:32,010
+first we have to do NPM CI, which installs dependencies.
+
+147
+00:06:33,170 --> 00:06:36,890
+And then we have to do another one, another NPM command,
+
+148
+00:06:36,890 --> 00:06:39,250
+which is NPM run build,
+
+149
+00:06:39,250 --> 00:06:42,210
+which actually creates the files,
+
+150
+00:06:42,210 --> 00:06:45,610
+the files that the JavaScript files packages everything together.
+
+151
+00:06:46,530 --> 00:06:49,250
+So we synchronize, we load the gets,
+
+152
+00:06:49,250 --> 00:06:51,250
+we install the dependencies,
+
+153
+00:06:51,250 --> 00:06:53,090
+we build the files that NPM run build,
+
+154
+00:06:53,090 --> 00:06:54,410
+and then the final thing we need to do
+
+155
+00:06:54,410 --> 00:06:56,090
+is we need to copy in the model.
+
+156
+00:06:56,090 --> 00:07:00,730
+We need to copy from the model,
+
+157
+00:07:00,730 --> 00:07:04,570
+and we want to go from everything from,
+
+158
+00:07:04,570 --> 00:07:07,010
+that's in the source model to the target model.
+
+159
+00:07:08,450 --> 00:07:12,940
+So let's go ahead and save this,
+
+160
+00:07:12,940 --> 00:07:14,380
+and then we'll execute it.
+
+161
+00:07:14,380 --> 00:07:18,150
+So let's see if this works, let me first try.
+
+162
+00:07:18,150 --> 00:07:20,950
+You can see it's running, it might take a minute or so.
+
+163
+00:07:20,950 --> 00:07:23,030
+You can see it completed, it gets synchronized,
+
+164
+00:07:23,030 --> 00:07:24,710
+loaded from GitHub.
+
+165
+00:07:24,710 --> 00:07:36,440
+Now it's running the first NPM job,
+
+166
+00:07:36,440 --> 00:07:39,400
+and this takes about a minute to do the whole thing, okay?
+
+167
+00:07:39,400 --> 00:07:42,120
+Great, so it's giving me a little log file with the output,
+
+168
+00:07:42,120 --> 00:07:43,480
+so that's completed.
+
+169
+00:07:43,480 --> 00:07:51,570
+Now it's running the NPM build command.
+
+170
+00:07:51,570 --> 00:07:54,490
+Okay, it's creating the HTML, it's completed,
+
+171
+00:07:54,490 --> 00:07:56,690
+and then finally it copies the model, it's done.
+
+172
+00:07:56,690 --> 00:08:00,730
+It's all set, it says succeeded, that's great.
+
+173
+00:08:00,770 --> 00:08:03,490
+And there's also a raw log that shows more detail
+
+174
+00:08:03,490 --> 00:08:06,750
+what it did down here.
+
+175
+00:08:06,750 --> 00:08:10,550
+So now I go back to history,
+
+176
+00:08:10,550 --> 00:08:12,630
+I can see every job that I have,
+
+177
+00:08:12,630 --> 00:08:15,230
+and this is the job I just did that succeeded.
+
+178
+00:08:15,230 --> 00:08:18,750
+This is an earlier one I did when testing that failed.
+
+179
+00:08:18,750 --> 00:08:23,230
+And I can go ahead and create new jobs
+
+180
+00:08:23,230 --> 00:08:25,910
+by just going back to the pipeline
+
+181
+00:08:25,910 --> 00:08:26,870
+and saying new pipelines
+
+182
+00:08:26,870 --> 00:08:29,150
+that I can make multiple pipelines here.
+
+183
+00:08:29,150 --> 00:08:32,030
+So now let's go ahead and let's go to the project files,
+
+184
+00:08:32,030 --> 00:08:33,590
+so we still see the source files,
+
+185
+00:08:33,590 --> 00:08:34,990
+this is still the same files,
+
+186
+00:08:34,990 --> 00:08:36,870
+the raw files loaded from GitHub,
+
+187
+00:08:36,870 --> 00:08:38,590
+but now if we look at the target files,
+
+188
+00:08:38,590 --> 00:08:40,990
+we've got some additional, I'm gonna go to interface,
+
+189
+00:08:40,990 --> 00:08:42,870
+this is actually the files that were built,
+
+190
+00:08:42,870 --> 00:08:47,230
+this is the compiled files that were built by Node,
+
+191
+00:08:47,230 --> 00:08:50,390
+and if I run the sim, I've got a sim,
+
+192
+00:08:50,390 --> 00:08:51,790
+I can log in and start playing.
+
+193
+00:08:51,790 --> 00:08:54,350
+So that's how this works.
+
+194
+00:08:54,350 --> 00:08:57,390
+And again, you can think of this very much
+
+195
+00:08:57,390 --> 00:08:59,830
+like a CI system like Jenkins,
+
+196
+00:08:59,830 --> 00:09:03,190
+the pipeline is gonna keep a log of every time it runs
+
+197
+00:09:03,190 --> 00:09:08,190
+and who it starts and you can track it that way.
+
+198
+00:09:08,710 --> 00:09:15,140
+Okay, thanks so much.
+

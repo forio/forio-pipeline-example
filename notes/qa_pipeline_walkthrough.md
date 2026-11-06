@@ -1,270 +1,270 @@
-# QA Walkthrough: Epicenter Pipeline
+# Epicenter Pipeline: QA Walkthrough Script
 
 As of 2026-11-05. Shareable copy: https://claude.ai/artifact/1nLmFSK4HBPZyeazGCYBRb
 
-## Purpose
+This is the narration for the screen-recorded walkthrough that teaches QA how to test the
+Epicenter **pipeline** feature: project setup, developer layout, GitHub sync and npm build.
+Spoken lines are plain text. *On screen* cues in italics say what should be visible while you
+say them. Reference screenshots are in `notes/screenshots/`.
 
-This script accompanies the screen-recorded walkthrough and tells QA how to test the
-Epicenter **pipeline** feature end to end: developer (directory) layout, GitHub sync, npm
-build, and the resulting sim. Each step says what to do, what to show on screen, and what
-counts as a pass. Steps take about 30 minutes total; the build itself runs in under a minute.
+Everything is done in the Epicenter admin UI and on GitHub. No files are uploaded by hand and
+no pipeline config files are uploaded; the pipeline is assembled in the UI.
 
-Reference project: https://github.com/forio/forio-pipeline-example, the Epicenter React
-template ("Bike Shop" Excel model) in the developer layout.
+## Before you record
 
-### Prerequisites
+- Two browser tabs: the Epicenter admin UI on the test server, and GitHub.
+- You are logged in to GitHub with an account that can fork a repository and add a deploy key.
+- You are logged in to Epicenter with an account you can create projects in, and there is no
+  project called `qa-pipeline-example` in it yet.
+- The example repository is https://github.com/forio/forio-pipeline-example.
 
-- A GitHub account that can fork `forio/forio-pipeline-example` and add a deploy key to the fork.
-- An Epicenter admin login on the test server with author rights on the account you will use
-  (the walkthrough was recorded on `epicenter-sandbox-1.forio.com`, account `wgh`).
-- Locally: `git`, `openssl`, `ssh-keygen` (ships with Git for Windows and macOS) and Node 24
-  if you want to run the optional command-line checks.
-- Decide the project short name before you start. The script uses `qa-pipeline-example`.
+Running time is about ten minutes. The build itself takes about half a minute.
 
-### Vocabulary
+---
 
-| Term | Meaning |
-| --- | --- |
-| Developer layout | Epicenter's directory ("rational") layout: the project has `src/`, `target/`, `config/` and `log/`. The git repository is cloned into `src/`; the sim is served from `target/`. |
-| Pipeline | A named, ordered list of operations (`git`, `npm`, `copy`, `clean`, `configure`) that you assemble in the admin UI. Epicenter stores it as `config/pipeline/<name>.cfg1`. Running it produces an audit record and a log. |
-| Deploy key | A read-only SSH key registered on the GitHub repository that lets Epicenter pull it. |
+## 1. Introduction
 
-## Step 1 — Fork the repository and tour the developer layout
+*On screen: the Epicenter admin home page.*
 
-Outcome: QA owns a copy of the project on GitHub and understands what Epicenter will clone.
+Today I'm going to show you how to use the Epicenter Pipeline. This is a new feature of
+Epicenter that lets you pull source code from GitHub, build it with npm, and serve the result
+as your sim. It's essentially Epicenter acting as its own Jenkins: a small continuous
+integration system built right into the platform.
 
-1. On GitHub, open https://github.com/forio/forio-pipeline-example and click **Fork**. Keep
-   the name `forio-pipeline-example`; fork all branches or just `main` (the walkthrough only
-   needs `main`).
-2. Clone your fork locally (optional, but useful for showing the files):
+I've put together an example project called forio-pipeline-example that you can fork and use
+to test this out. We'll get to GitHub in a few minutes. First I want to create the project on
+Epicenter, because there are a couple of settings we have to change before the pipeline is
+even available.
 
-   ```bash
-   git clone git@github.com:<your-github-user>/forio-pipeline-example.git
-   cd forio-pipeline-example
-   ```
+## 2. Create the project
 
-3. **Show on screen:** the repository root. Say out loud that the repository root *is*
-   Epicenter's `src/` directory: whatever is at the top level of the repo lands in `src/` on
-   the platform.
+*On screen: your account page, then the new project form.*
 
-   | Folder | What it is | What the pipeline does with it |
-   | --- | --- | --- |
-   | `interface/` | The npm project (Vite + React + TypeScript). `package.json` and `package-lock.json` live here. | `npm ci` and `npm run build` run inside this folder; the build writes to `target/interface`. |
-   | `model/` | `model.xlsx` (Bike Shop model) and `model.ctx2`. | The `copy` operation copies it to `target/model`. |
-   | `pipeline/` | Reference copies of the pipeline definitions (`sync.cfg1`, `build.cfg1`, `build-dev.cfg1`), the same operations you will select in the UI. | Nothing automatic; useful to compare against what the UI saves. |
-   | `tests/`, `update_notes/`, `notes/` | Smoke test, screenshots, conversion notes. | Ignored by the pipeline. |
+I'm logged in to Epicenter and I'm in my account. I'll create a new project. Give it a simple
+name. I'll call this one qa-pipeline-example. For project access, pick Password Protected,
+which is what a typical sim uses. And create the project.
 
-4. Open `pipeline/build.cfg1` and read the four operations aloud; you will recreate them in the UI in Step 5.
+## 3. Project Files in the standard layout
 
-**Pass:** the fork exists under your GitHub account and `interface/package-lock.json` is
-present (the build uses `npm ci`, which fails without a lockfile).
+*On screen: Project Files.*
 
-## Step 2 — Create the project `qa-pipeline-example`
+Let's look at the project files first. By default a project has two main sections: a model
+folder and an interface folder. You put your model in one, your web files in the other, and
+Epicenter serves them straight from there. That's the standard layout, and it's fine for a
+sim you upload by hand.
 
-Outcome: an empty project in the developer layout, ready to receive the repository.
+But a pipeline needs one place to put source code and a separate place to put the built
+output. So we need to switch this project over to the developer layout.
 
-1. Log in to the Epicenter admin UI on the test server and create a new project in your
-   account with these settings:
+## 4. Change the settings
 
-   | Setting | Value | API equivalent (`POST /project`) |
-   | --- | --- | --- |
-   | Short name | `qa-pipeline-example` | `shortName` |
-   | Project Access | **Password Protected** | `accessType` (users must log in with a group; not `public`) |
-   | Web Access | **Allow access to all URLs by default** | `structure.enforceFilePermissions: false` |
-   | Directory Layout | **Developer** | `structure.layout: "RATIONAL"` |
+*On screen: Settings, scrolled to Advanced Settings.*
 
-2. **Show on screen:** the project's file browser. In the developer layout the project has
-   four top-level folders. Open `src/` and `target/` and show that both are empty apart from
-   the placeholder folders.
+Go to Settings, and scroll down to Advanced Settings. I want to change two things here.
 
-   | Folder | Contents right after creation |
-   | --- | --- |
-   | `src/` | `data/`, `model/`, `proxy/`, `interface/` (all empty) |
-   | `target/` | `data/`, `model/`, `proxy/`, `interface/` with `public/`, `private/`, `facilitator/` |
-   | `config/` | `pipeline/` (empty) |
-   | `log/` | `model/`, `pipeline/`, `flight/`, `proxy/`, `interface/` |
+The first is Web Access. I'm going to set that to "Allow access to all URLs by default". This
+is pretty standard for a simulation, because the sim handles its own login. If you skip this
+one, Epicenter will try to send visitors to a login page that this sim doesn't have, and the
+sim will look broken.
 
-3. Say why Web Access matters: with URL access restricted, an unauthenticated visitor is
-   redirected to a `login.html` that this React app does not have, so the sim would appear broken.
+The second one is the key setting: Directory Layout. Change it from Simple to Developer. Then
+save the project settings.
 
-**Pass:** the project opens, the layout is Developer, and `src/` and `target/` are present and empty.
+## 5. Project Files in the developer layout
 
-*Command-line alternative:* from a clone of the fork with `interface/.env` pointing at your
-account and project and the credentials file filled in,
-`cd interface && npm ci && npm run project -- create --private` creates the project with the
-developer layout, then `npm run project -- web-access allow`.
+*On screen: Project Files again, then the sidebar.*
 
-## Step 3 — Connect the project to GitHub
+Now go back to Project Files, and you can see the layout has changed. Instead of model and
+interface at the top, we have a source section and a target section. Source has model,
+interface, proxy and data folders. Target has the same four.
 
-Outcome: Epicenter can pull your fork over SSH with a read-only deploy key.
+Here's the idea. Our source code from GitHub is going to land in source. The build process is
+going to compile it and put the result in target. And the sim is served out of target. That's
+the whole job of the pipeline: get code into source, and turn source into target.
 
-1. Generate a key pair in a folder that is **not** inside the repository. Epicenter stores the
-   private key as a PKCS#8 key, so generate it with `openssl` (an OpenSSH-format key from
-   `ssh-keygen -t ed25519` is rejected with "Not a base64 encoded stream"):
+And notice there's a new item in the sidebar now: Pipeline. It only appears in the developer
+layout. We'll come back to it. Before we can use it, we have to tell Epicenter where the code
+lives.
 
-   ```bash
-   openssl genpkey -algorithm ed25519 -out qa-deploy-key.pem     # private key, PKCS#8 PEM
-   ssh-keygen -y -f qa-deploy-key.pem > qa-deploy-key.pub        # matching OpenSSH public key
-   cat qa-deploy-key.pub
-   ```
+## 6. GitHub: the example project and your fork
 
-2. On GitHub open your fork → **Settings → Deploy keys → Add deploy key**. Title
-   `epicenter-qa`, paste the contents of `qa-deploy-key.pub`, leave **Allow write access**
-   unchecked. **Show on screen:** the key listed as read-only.
-3. In the Epicenter admin UI open the project's git integration and enter:
+*On screen: the GitHub tab, at forio/forio-pipeline-example.*
 
-   | Field | Value |
-   | --- | --- |
-   | Repository URI | `ssh://git@github.com/<your-github-user>/forio-pipeline-example.git` (the `ssh://` form; the scp-style `git@github.com:user/repo.git` fails with "Illegal character in scheme name") |
-   | Algorithm | `ed25519` |
-   | Private key | the base64 body of `qa-deploy-key.pem` with the `BEGIN`/`END` lines removed, spec `pkcs8` |
-   | Public key | the `ssh-ed25519 AAAA…` line from `qa-deploy-key.pub` (comment optional), spec `openssh` |
+Let's go over to GitHub. You'll need a GitHub account for this, so create one if you don't
+already have one. This is the forio-pipeline-example repository. It's a very simple sim based
+on dev-base-build: it lets you log in, and it has a small Excel model.
 
-4. **Show on screen:** the saved integration showing the URI and the public key. The private
-   key is never displayed again.
+Look at the folder layout for a second. There's an interface folder, which is the npm
+project, the React source code with its package.json. And there's a model folder with the
+Excel model. Those two names match the folders inside source back on Epicenter, and that's
+not a coincidence. The top level of this repository is going to become the source folder on
+the platform.
 
-**Pass:** the integration saves without error. Nothing is pulled yet; the sync happens in Step 4.
+You'll want your own copy of this, so you can add a deploy key to it and change things
+without touching the original. Click Fork. It shows your GitHub username as the owner. Keep
+the repository name as it is, and create the fork. Now I have my own copy under my account.
 
-*Command-line alternative:*
-`npm run project -- git ssh://git@github.com/<user>/forio-pipeline-example.git qa-deploy-key.pem qa-deploy-key.pub`
-strips the PEM armor and sends the correct specs for you.
+## 7. Connect Epicenter to GitHub
 
-## Step 4 — Pipeline 1: sync the repository into `src/`
+*On screen: Epicenter Settings, the Git Integration section. Keep the fork open in the other tab.*
 
-Outcome: the fork's `main` branch appears under `src/` on the project.
+Back to Epicenter. Go to Settings, and near the top there's a section for Git Integration.
+Click that. I need to fill in two things: where the repository is, and a key so that Epicenter
+is allowed to read it.
 
-1. In the Epicenter admin UI open the project's **Pipelines** area and create a new pipeline
-   named `sync`. Add one operation:
+First, the repository URL. This is not the address in your browser bar. On GitHub, on your
+fork, click the green Code button and choose SSH. The address starts with git at github dot
+com. Copy that, come back to Epicenter, and paste it into the repository URL field.
 
-   | Operation | Field | Value |
-   | --- | --- | --- |
-   | Git | Branch | `main` |
-   | Git | Confirmed | on (required: the sync discards any local changes in `src/`) |
-   | Git | Force | off |
+You can set a passphrase if you like. I'm going to leave it blank.
 
-   Leave the audit retention at its default (20). Save the pipeline.
-2. **Show on screen:** the project file browser now has `config/pipeline/sync.cfg1`. Open it
-   and show it matches `pipeline/sync.cfg1` in the fork: one `git` operation with
-   `"branch": "main"` and `"confirmed": true`.
-3. Run the pipeline `sync`. It finishes in a few seconds.
-4. **Show on screen:** the audit record going from `RUNNING` to `SUCCEEDED`, then the log
-   `log/pipeline/sync-<auditKey>.log`. The git line reads `Git synchronized on sha(…)`; the
-   SHA matches the latest commit on your fork's `main`.
-5. **Show on screen:** `src/` now contains the repository: `interface/`, `model/`,
-   `pipeline/`, `tests/`, `README.md`, a `.git/` folder. `target/` is still empty.
+Now the key. Epicenter has already generated a deploy key for this project. It's right here,
+with instructions next to it. This is the public half of the key; GitHub uses it to recognize
+Epicenter. So I copy it, go back to my fork on GitHub, open the repository's Settings, scroll
+down to Deploy keys, and click Add deploy key. Give it a simple title, something like
+"epicenter pipeline". Paste the key in. Leave "Allow write access" unchecked, because Epicenter
+only needs to read. Add the key.
 
-**Pass:** status `SUCCEEDED`, `src/interface/package.json` exists, `target/interface` has no
-`index.html` yet.
+So now both sides know this key, and Epicenter is able to pull files from GitHub.
 
-## Step 5 — Pipeline 2: full build with npm
+*On screen: back on Epicenter, the Initialize Repository button and its warning.*
 
-Outcome: the interface is built inside Epicenter's Node container and the model is copied into `target/`.
+Back on Epicenter I'll click Initialize Repository. Read the warning: this is going to delete
+any files currently in the project and replace them with the contents of the repository. That's
+fine, there's nothing in here yet. Go ahead.
 
-1. Create a second pipeline named `build` and add four operations in this order:
+## 8. The source files are in
 
-   | # | Operation | Field | Value |
-   | --- | --- | --- | --- |
-   | 0 | Git | Branch | `main` |
-   | 0 | Git | Confirmed | on |
-   | 1 | NPM | Node version | `v24` |
-   | 1 | NPM | Directory | `interface` |
-   | 1 | NPM | Command | `npm ci` (one command per NPM operation) |
-   | 1 | NPM | Timeout (minutes) | `20` |
-   | 2 | NPM | Node version | `v24` |
-   | 2 | NPM | Directory | `interface` |
-   | 2 | NPM | Command | `npm run build` |
-   | 2 | NPM | Timeout (minutes) | `20` |
-   | 3 | Copy | Location | `MODEL` (leave From and To empty) |
+*On screen: Project Files, inside source.*
 
-   Save the pipeline. **Show on screen:** `config/pipeline/build.cfg1` now exists and matches
-   `pipeline/build.cfg1` in the fork.
-2. Explain the operations while the audience looks at the pipeline:
+Let's check. Project Files, open source, and now I have the model files and the interface
+files. These came straight from GitHub.
 
-   | # | Operation | What it does | Where |
-   | --- | --- | --- | --- |
-   | 0 | `git` | Re-syncs `src/` with `main` (same as Step 4). | platform |
-   | 1 | `npm ci` | Installs dependencies from `package-lock.json` in a Node 24 container. Each `npm` operation runs exactly one command; network access is allowed. | container, working dir `/src/interface` |
-   | 2 | `npm run build` | `tsc -b && vite build`; Vite writes to `/target/interface` (the project's `target/` is mounted there). | container |
-   | 3 | `copy MODEL` | Copies `src/model/` to `target/model/`. | platform |
+But these are source files. They aren't ready to run. If I clicked Run Project right now
+there'd be nothing there, because target is still empty. What I have to do is run npm to build
+the interface, and copy the model across. That is exactly what the pipeline does.
 
-3. Run the pipeline `build`. Expect about 35 seconds: `npm ci` is the long step.
-   **Show on screen:** the audit status `RUNNING`, then `SUCCEEDED`.
-4. Open the log `log/pipeline/build-<auditKey>.log`. It is one JSON object per log entry,
-   each with `index` (operation number), `operationType`, `status` and `message`.
-   **Show on screen** and read these lines:
-   - `[0 GIT COMPLETED] Git synchronized on sha(…)`
-   - `[1 NPM RUNNING] Now using node v24.x` followed by npm's install output, then
-     `[1 NPM COMPLETED] Container completed successfully`
-   - `[2 NPM RUNNING] ✓ built in 4.6s` with the list of files written under `../../target/interface/`
-   - `[3 COPY COMPLETED] success`
-5. Run `build` a second time to show it is repeatable; the audit list now shows two
-   `SUCCEEDED` records.
+## 9. Build the pipeline in the UI
 
-**Pass:** status `SUCCEEDED`, all four operations `COMPLETED`, no operation `SKIPPED`
-(a `SKIPPED` operation means an earlier one failed).
+*On screen: Pipeline in the sidebar, then New Pipeline (screenshots 1 and 2).*
 
-## Step 6 — Show the build output and run the sim
+Click Pipeline in the sidebar. This is where you define a job, the equivalent of a Jenkins
+job. Click New Pipeline.
 
-Outcome: the files the pipeline produced are in `target/`, and a user can log in and play.
+A pipeline is just a list of operations that run in order, top to bottom. Start by giving it a
+name over on the right. I'll call it git-and-build. The name becomes the config name on the
+back end, so keep it simple, no spaces.
 
-1. **Show on screen:** `target/interface/` now holds `index.html` and an `assets/` folder with
-   the hashed CSS and JS bundles. `target/model/` holds `model.xlsx` and `model.ctx2`. Point
-   out that nothing was uploaded by hand: `target/` is entirely pipeline output.
-2. Because the project is Password Protected, the sim needs a group and users. In the admin
-   UI create a group (for example `qa-test`) in `qa-pipeline-example` and add two users: one
-   **facilitator** and one **participant**. Record the credentials somewhere private; never
-   in the repository.
-3. Open `https://<server>/app/<account>/qa-pipeline-example/` in a browser. **Show on
-   screen:** the page title "Bike Shop" and the Log In form. Open the browser console and
-   show there are no errors.
-4. Log in as the facilitator. The facilitator view creates the first episode automatically. Log out.
-5. Log in as the participant. **Show on screen:** the participant view creates a run of
-   `model.xlsx` and displays the Bike Shop variables (price, sales, revenue, costs, profit
-   over time). Step the model and show the values change.
+*On screen: the Add Operation dialog (screenshot 3).*
 
-**Pass:** `target/interface/index.html` and `target/model/model.xlsx` exist; the sim loads at
-the project URL; both logins work and the participant sees model values.
+Now click Add Operation. There are four kinds. Clean clears out the target directory. Git
+Synchronize pulls from the repository. NPM runs an npm command in a container. And Copy copies
+files between locations. We're going to use three of them today.
 
-*Command-line alternative:* with the group and users listed in the credentials file,
-`npm run test:smoke` logs in as both roles, creates the episode and run, and prints `Step`,
-`Price`, `Bike_Sales` and `Profit`.
+First, Git Synchronize. This matches the project's copy of the code to the remote branch. We
+already set up the git integration, so it knows where to pull from. Branch is main.
 
-## Checklist, troubleshooting and clean-up
+Next, NPM. This runs a Node.js command inside a Docker container. For this example we need two
+npm steps. Which commands you need will depend on the codebase, but this is the standard
+pattern. The first command is npm ci, which installs the dependencies. Directory is Interface,
+because that's where package.json lives. Node version is 24. The timeout is in minutes; ten is
+plenty.
 
-### Pass/fail checklist
+Add another NPM operation with the same settings, and this time the command is npm run build.
+That compiles the TypeScript and bundles everything into the files the browser loads, and it
+writes them straight into target.
 
-- [ ] Fork exists and contains `interface/package-lock.json`
-- [ ] Project `qa-pipeline-example` created: Password Protected, Web Access allow all URLs, Developer layout
-- [ ] `src/` and `target/` shown empty after creation
-- [ ] Deploy key listed on the fork as read-only; git integration saved with the `ssh://` URI
-- [ ] Pipeline `sync` built in the UI (one Git operation), SUCCEEDED, and `src/` shows the repository files
-- [ ] Pipeline `build` built in the UI (Git, NPM `npm ci`, NPM `npm run build`, Copy MODEL), SUCCEEDED with operations 0–3 all COMPLETED; log shown
-- [ ] `target/interface/index.html` and `target/model/model.xlsx` present
-- [ ] Sim loads at the project URL; facilitator and participant can log in; participant sees model values
+Last one: Copy. We need the model to go from source to target as well. Location is Model.
+Leave From and To blank, which means the whole model folder, root to root.
 
-### Troubleshooting
+*On screen: the four operations listed in order.*
 
-| Symptom (from the pipeline log or UI) | Cause | Fix |
-| --- | --- | --- |
-| `[0 GIT FAILED] Not a base64 encoded stream` | Private key pasted in OpenSSH format or with PEM header lines | Generate with `openssl genpkey`, paste only the base64 body, spec `pkcs8` |
-| `[0 GIT FAILED] Illegal character in scheme name at index 3` | URI in `git@github.com:user/repo.git` form | Use `ssh://git@github.com/user/repo.git` |
-| Git step fails to authenticate | Deploy key not added to the fork, or added to the upstream repo instead | Add the public key under the fork's Settings → Deploy keys |
-| `[1 NPM FAILED]` during `npm ci` | `package-lock.json` missing or out of date in the fork | Commit a matching lockfile and push; re-run |
-| Build succeeds but `target/interface` stays empty and `src/target/` appears | Vite writing to `../target` relative to `/src/interface` | The template's `vite.config.ts` already writes to `/target/interface` inside the container; make sure the fork has it |
-| Sim URL returns 404 right after creation | Nothing built yet | Run the `build` pipeline |
-| Sim redirects to `login.html` | Web Access is not "allow all URLs" | Change the setting (`structure.enforceFilePermissions: false`) |
-| Operations after a failure show `SKIPPED` | Expected: the pipeline stops at the first failed operation | Fix the failed operation and re-run |
-| A changed pipeline still runs the old operations | The saved `config/pipeline/<name>.cfg1` was not updated | Re-open the pipeline in the UI, check the operations, save again and confirm the file changed |
+So, reading top to bottom: sync from git, install dependencies, build the interface, copy the
+model. Save the pipeline.
 
-### Clean-up after the session
+## 10. Run it and read the results
 
-- Delete the project `qa-pipeline-example` (or keep it as a regression fixture).
-- Remove the deploy key from the fork and delete `qa-deploy-key.pem`.
-- Delete the test users if they were created only for the walkthrough.
+*On screen: Execute, then the run page as it progresses (screenshot 4, top and bottom).*
 
-### Sources
+Now click Execute. It takes you to the run page and you can watch it go step by step.
 
-- Repository and CLIs: https://github.com/forio/forio-pipeline-example (see `README.md`,
-  `pipeline/README.md`, `update_notes/2026-11-05-pipeline-conversion.md`).
-- Behaviours in the troubleshooting table were observed on `epicenter-sandbox-1.forio.com`
-  (Epicenter 6.1.0) on 2026-11-05.
+Git Synchronize finishes almost instantly. It shows the commit it synced to and the branch.
+Then the first npm step starts, npm ci. This is the slow one, because it's downloading
+packages, so give it twenty or thirty seconds. Each operation has an Output section you can
+expand to see the actual npm output.
+
+Now the build step. Done, it created the HTML and the JavaScript. And finally the copy. At the
+top it says Succeeded, with the duration, who started it, and when. And at the bottom there's
+a Raw Log with the full detail, if you ever need to work out why a step failed.
+
+*On screen: Back to History, then the Pipeline list.*
+
+Click Back to History. Every run of this pipeline is listed here, whether it succeeded or
+failed. And if you go back to the Pipeline page, the pipeline is in the list with buttons to
+run it again, duplicate it, or delete it. You can create as many pipelines as you want; for
+example, one that only syncs from git and one that does the full build.
+
+## 11. Target, and the running sim
+
+*On screen: Project Files, target, then interface and model inside it. Then Run Project.*
+
+Let's go back to Project Files. Source is still the same raw files from GitHub. But now look at
+target. Target interface has the built files: index.html and an assets folder with the compiled
+JavaScript and CSS. Target model has the Excel model. Nothing in here was uploaded by hand. It
+is all pipeline output.
+
+And now if I click Run Project, there's the sim. I can log in and start playing.
+
+(The project is password protected, so you need a workshop with at least one user in it to log
+in. If you don't have one, create it under Workshops before you record this part.)
+
+So that's how the pipeline works. Think of it as a CI system like Jenkins, built into
+Epicenter. Source comes in from GitHub, npm builds it, the result is served from target, and
+every run is logged with who started it and when. Thanks so much.
+
+---
+
+## What QA should verify
+
+Each of these is a pass/fail check while following the script.
+
+- [ ] A new project starts in the standard layout: Project Files shows model and interface.
+- [ ] After saving Web Access "Allow access to all URLs by default" and Directory Layout
+      "Developer", Project Files shows source and target, each with data, interface, model
+      and proxy, and Pipeline appears in the sidebar.
+- [ ] The fork exists under your GitHub account.
+- [ ] Git Integration accepts the SSH repository URL from GitHub's Code button and shows a
+      deploy key to copy.
+- [ ] The deploy key is listed on the fork under Settings, Deploy keys, as read-only.
+- [ ] Initialize Repository warns that existing files will be deleted, then source contains
+      the repository (interface, model, pipeline, tests, README).
+- [ ] New Pipeline accepts a name and the four operations: Git Synchronize (branch main),
+      NPM npm ci, NPM npm run build (both Directory Interface, Node v24), Copy (Location Model).
+- [ ] Execute runs the operations top to bottom; each shows Completed and the run shows
+      Succeeded with Started By, Started, Duration, per-step Output and a Raw Log.
+- [ ] History lists the run; the Pipeline page lists the pipeline with run, duplicate and
+      delete actions.
+- [ ] target/interface contains index.html and assets; target/model contains model.xlsx.
+- [ ] Run Project opens the sim, and a workshop user can log in.
+
+## If something goes wrong
+
+- **Git Synchronize fails to authenticate.** The deploy key was added to the original
+  forio repository instead of your fork, or not added at all. Add it under the fork's
+  Settings, Deploy keys, and run again.
+- **Git Synchronize fails with "Illegal character in scheme name".** Enter the URL in the
+  form `ssh://git@github.com/<your-user>/forio-pipeline-example.git`.
+- **npm ci fails.** The fork's `interface/package-lock.json` is missing or out of date. Commit
+  a matching lockfile and run again.
+- **Later operations show Skipped.** Expected: the pipeline stops at the first failure. Fix
+  that step and run again.
+- **Run Project shows 404.** Nothing has been built yet, or the build wrote somewhere else.
+  Check target/interface for index.html and re-run the pipeline.
+- **Run Project redirects to login.html.** Web Access is not set to "Allow access to all URLs
+  by default". Change it in Settings, Advanced Settings.
+
+## Clean-up after the session
+
+- Delete the project `qa-pipeline-example`, or keep it as a regression fixture.
+- Remove the deploy key from your fork.
+- Delete any workshop users created only for the walkthrough.
